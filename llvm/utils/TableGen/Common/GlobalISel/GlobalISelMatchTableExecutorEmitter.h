@@ -17,6 +17,9 @@
 
 #include "Common/SubtargetFeatureInfo.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include <functional>
@@ -102,15 +105,25 @@ class GlobalISelMatchTableExecutorEmitter {
     if (!AdditionalDeclarations.empty())
       OS << "\n";
     if (!Predicates.empty()) {
+      MapVector<std::string, SmallVector<PredicateObject, 1>,
+                StringMap<unsigned>>
+          PredsByCode;
+      for (const auto &Pred : Predicates)
+        PredsByCode[GetPredCode(Pred).str()].push_back(Pred);
+
+      // Predicates that execute identical code are emitted as consecutive
+      // (fall-through) `case` labels.
       OS << "  switch (PredicateID) {\n";
-      for (const auto &Pred : Predicates) {
+      for (const auto &[PredCode, Preds] : PredsByCode) {
+        for (unsigned I = 0, E = Preds.size(); I != E; ++I) {
+          OS << "  case GICXXPred_" << TypeIdentifier << "_Predicate_"
+             << GetPredEnumName(Preds[I]) << ":" << (I + 1 == E ? " {\n" : "\n");
+        }
         // Ensure all code is indented.
-        const auto Code = join(split(GetPredCode(Pred).str(), "\n"), "\n    ");
-        OS << "  case GICXXPred_" << TypeIdentifier << "_Predicate_"
-           << GetPredEnumName(Pred) << ": {\n"
-           << "    " << Code << "\n";
+        const auto Code = join(split(PredCode, "\n"), "\n    ");
+        OS << "    " << Code << "\n";
         if (!StringRef(Code).ltrim().starts_with("return")) {
-          OS << "    llvm_unreachable(\"" << GetPredEnumName(Pred)
+          OS << "    llvm_unreachable(\"" << GetPredEnumName(Preds.back())
              << " should have returned\");\n";
         }
         OS << "  }\n";

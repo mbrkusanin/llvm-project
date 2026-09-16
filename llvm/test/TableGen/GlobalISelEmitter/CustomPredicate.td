@@ -16,27 +16,25 @@
 // CHECK-NEXT:   GICXXPred_MI_Predicate_sub3_pat,
 // CHECK-NEXT: };
 
-// Verify that we emit cases for all MI predicates.
+// Verify that we emit cases for all MI predicates, and that predicates sharing
+// identical C++ code are de-duplicated into consecutive fall-through cases.
 //
 // CHECK: bool MyTargetInstructionSelector::testMIPredicate_MI(
-// CHECK:    case GICXXPred_MI_Predicate_and_or_pat: {
-// CHECK:      return doesComplexCheck(MI);
-// CHECK:    case GICXXPred_MI_Predicate_fadd_contract: {
-// CHECK:      return MI.getFlag(MachineInstr::FmContract);
-// CHECK:    case GICXXPred_MI_Predicate_ffloor_nnan: {
-// CHECK:      return MI.getFlag(MachineInstr::FmNoNans);
-// CHECK:    case GICXXPred_MI_Predicate_fmul_contract: {
-// CHECK:      return MI.getFlag(MachineInstr::FmContract);
-// CHECK:    case GICXXPred_MI_Predicate_fsub_contract: {
-// CHECK:      return MI.getFlag(MachineInstr::FmContract);
-// CHECK:    case GICXXPred_MI_Predicate_mul_pat: {
-// CHECK:      return doesComplexCheck(MI);
-// CHECK:    case GICXXPred_MI_Predicate_or_oneuse: {
-// CHECK:      return MRI.hasOneNonDBGUse(MI.getOperand(0).getReg());
-// CHECK:    case GICXXPred_MI_Predicate_patfrags_test_pat: {
-// CHECK:      return doesComplexCheck(MI);
-// CHECK:    case GICXXPred_MI_Predicate_sub3_pat: {
-// CHECK:      return doesComplexCheck(MI);
+// CHECK:      case GICXXPred_MI_Predicate_and_or_pat:
+// CHECK-NEXT: case GICXXPred_MI_Predicate_mul_pat:
+// CHECK-NEXT: case GICXXPred_MI_Predicate_patfrags_test_pat:
+// CHECK-NEXT: case GICXXPred_MI_Predicate_sub3_pat: {
+// CHECK:        return doesComplexCheck(MI);
+// CHECK:      case GICXXPred_MI_Predicate_fadd_contract:
+// CHECK-NEXT: case GICXXPred_MI_Predicate_fmul_contract:
+// CHECK-NEXT: case GICXXPred_MI_Predicate_fsub_contract: {
+// CHECK:        return MI.getFlag(MachineInstr::FmContract);
+// CHECK:      case GICXXPred_MI_Predicate_ffloor_nnan: {
+// CHECK:        return MI.getFlag(MachineInstr::FmNoNans);
+// CHECK:      case GICXXPred_MI_Predicate_or_disjoint: {
+// CHECK:        return MI.getFlag(MachineInstr::Disjoint);
+// CHECK:      case GICXXPred_MI_Predicate_or_oneuse: {
+// CHECK:        return MRI.hasOneNonDBGUse(MI.getOperand(0).getReg());
 
 include "llvm/Target/Target.td"
 include "GlobalISelEmitterCommon.td"
